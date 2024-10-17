@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بنك الأسئلة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f8ff;
+            color: #333;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            margin-top: 20px;
+            color: #007BFF;
+        }
+        .question-container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            text-align: left;
+        }
+        .button {
+            padding: 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 5px;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>بنك الأسئلة</h1>
+    <div id="questions-container"></div>
+    <div>
+        <a href="index.html" class="button">العودة للصفحة الرئيسية</a>
+        <a href="add-question.html" class="button">إضافة سؤال</a>
+    </div>
+
+    <script>
+        const questionsContainer = document.getElementById('questions-container');
+
+        // دالة لتحميل الأسئلة من الخادم
+        async function loadQuestions() {
+            const response = await fetch('http://localhost:3000/questions');
+            const questions = await response.json();
+
+            questionsContainer.innerHTML = ''; // تفريغ المحتوى الحالي
+
+            questions.forEach((question, index) => {
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'question-container';
+                questionDiv.innerHTML = `
+                    <h3>السؤال ${index + 1}:</h3>
+                    <p>${question.text}</p>
+                    <p>الإجابات:</p>
+                    <ul>
+                        ${question.options.map((option) => `<li>${option}</li>`).join('')}
+                    </ul>
+                    <button class="button" onclick="editQuestion(${question.id})">تعديل</button>
+                    <button class="button" onclick="deleteQuestion(${question.id})">حذف</button>
+                `;
+                questionsContainer.appendChild(questionDiv);
+            });
+        }
+
+        // دالة لحذف السؤال
+        async function deleteQuestion(id) {
+            if (confirm('هل أنت متأكد من حذف هذا السؤال؟')) {
+                const response = await fetch(`http://localhost:3000/questions/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    alert('تم حذف السؤال بنجاح!');
+                    loadQuestions(); // إعادة تحميل الأسئلة بعد الحذف
+                } else {
+                    alert('حدث خطأ أثناء حذف السؤال.');
+                }
+            }
+        }
+
+        // دالة لتعديل السؤال
+        async function editQuestion(id) {
+            const response = await fetch(`http://localhost:3000/questions/${id}`);
+            const question = await response.json();
+
+            const newQuestionText = prompt('عدل السؤال:', question.text);
+            const newOptions = [];
+            for (let i = 0; i < question.options.length; i++) {
+                const newOption = prompt(`عدل الخيار ${i + 1}:`, question.options[i]);
+                newOptions.push(newOption);
+            }
+            const newCorrectAnswer = prompt('اختر الرقم الصحيح (0-3):', question.correctAnswer);
+
+            const updatedQuestion = {
+                text: newQuestionText,
+                options: newOptions,
+                correctAnswer: parseInt(newCorrectAnswer)
+            };
+
+            const updateResponse = await fetch(`http://localhost:3000/questions/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatedQuestion)
+            });
+
+            if (updateResponse.ok) {
+                alert('تم تعديل السؤال بنجاح!');
+                loadQuestions(); // إعادة تحميل الأسئلة بعد التعديل
+            } else {
+                alert('حدث خطأ أثناء تعديل السؤال.');
+            }
+        }
+
+        // تحميل الأسئلة عند فتح الصفحة
+        loadQuestions();
+    </script>
+</body>
+</html>

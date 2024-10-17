@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبر نفسك</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(to right, #56ccf2, #2f80ed);
+            color: #333;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        h1 {
+            margin-bottom: 20px;
+            color: #fff;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        .question-container {
+            max-width: 900px;
+            min-height: 500px;
+            background-color: #ffffff;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            margin: 20px auto;
+            transition: transform 0.3s;
+        }
+        .question-container:hover {
+            transform: translateY(-5px);
+        }
+        .option {
+            margin: 15px 0;
+            cursor: pointer;
+            padding: 15px;
+            border: 2px solid #007BFF;
+            border-radius: 5px;
+            transition: background-color 0.3s, color 0.3s, border 0.3s;
+            background-color: #f0f8ff;
+            font-weight: 500;
+            font-size: 18px;
+        }
+        .option:hover {
+            background-color: #e7f1ff;
+        }
+        .correct {
+            background-color: #4caf50;
+            color: white;
+            border-color: #388e3c;
+        }
+        .wrong {
+            background-color: #f44336;
+            color: white;
+            border-color: #c62828;
+        }
+        .button {
+            margin-top: 30px;
+            padding: 12px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 20px;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .button:active {
+            transform: translateY(1px);
+        }
+        #result {
+            display: none;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>اختبر نفسك</h1>
+    <div class="question-container" id="question-container"></div>
+    <div id="result">
+        <h2>انتهى الاختبار!</h2>
+        <p>عدد الإجابات الصحيحة: <span id="score"></span></p>
+        <button class="button" onclick="goToHomePage()">العودة إلى الصفحة الرئيسية</button>
+    </div>
+
+    <script>
+        let questions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        // تحميل الأسئلة من السيرفر
+        async function loadQuestions() {
+            try {
+                const response = await fetch('http://localhost:3000/questions');
+                questions = await response.json();
+                loadQuestion();
+            } catch (error) {
+                console.error('فشل في تحميل الأسئلة:', error);
+            }
+        }
+
+        function loadQuestion() {
+            if (currentQuestionIndex < questions.length) {
+                const questionContainer = document.getElementById('question-container');
+                const question = questions[currentQuestionIndex];
+                questionContainer.innerHTML = `
+                    <h2>${question.text}</h2>
+                    ${question.options.map((option, index) => `
+                        <div class="option" onclick="selectAnswer(${index})">${option}</div>
+                    `).join('')}
+                `;
+            } else {
+                showResult();
+            }
+        }
+
+        function selectAnswer(selectedIndex) {
+            const question = questions[currentQuestionIndex];
+            if (selectedIndex === question.correctAnswer) {
+                score++;
+                document.querySelectorAll('.option')[selectedIndex].classList.add('correct');
+            } else {
+                document.querySelectorAll('.option')[selectedIndex].classList.add('wrong');
+            }
+            setTimeout(() => {
+                currentQuestionIndex++;
+                loadQuestion();
+            }, 1000);
+        }
+
+        function showResult() {
+            document.getElementById('question-container').style.display = 'none';
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('score').innerText = score;
+        }
+
+        function goToHomePage() {
+            window.location.href = 'index.html'; 
+        }
+
+        // تحميل الأسئلة
+        loadQuestions();
+    </script>
+</body>
+</html>
