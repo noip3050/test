@@ -8,28 +8,78 @@
     <style>
         body {
             font-family: 'Roboto', sans-serif;
-            background-color: #f0f8ff;
-            color: #333;
+            background-color: #e9ecef;
+            color: #343a40;
             text-align: center;
             margin: 0;
             padding: 0;
+            line-height: 1.6;
         }
+
         h1 {
             margin-top: 20px;
-            color: #007BFF;
+            color: #007bff;
         }
+
+        h2 {
+            margin: 20px 0;
+            color: #495057;
+        }
+
         .question-container {
             max-width: 600px;
             margin: 20px auto;
             padding: 20px;
-            background-color: #ffffff;
+            background-color: #fff;
             border-radius: 8px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             text-align: left;
         }
-        .button {
+
+        form {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        input[type="text"], input[type="number"] {
+            width: calc(100% - 20px);
             padding: 10px;
-            background-color: #007BFF;
+            margin: 10px 0;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            margin: 5px;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .button {
+            padding: 10px 20px;
+            background-color: #28a745;
             color: white;
             border: none;
             border-radius: 5px;
@@ -37,17 +87,29 @@
             transition: background-color 0.3s;
             margin: 5px;
         }
+
         .button:hover {
-            background-color: #0056b3;
+            background-color: #218838;
         }
     </style>
 </head>
 <body>
     <h1>بنك الأسئلة</h1>
     <div id="questions-container"></div>
-    <div>
+    
+    <h2>أضف سؤالاً جديداً</h2>
+    <form id="add-question-form">
+        <input type="text" id="question-text" placeholder="اكتب السؤال هنا" required>
+        <input type="text" id="option1" placeholder="الخيار 1" required>
+        <input type="text" id="option2" placeholder="الخيار 2" required>
+        <input type="text" id="option3" placeholder="الخيار 3" required>
+        <input type="text" id="option4" placeholder="الخيار 4" required>
+        <input type="number" id="correct-answer" placeholder="رقم الإجابة الصحيحة (0-3)" min="0" max="3" required>
+        <button type="submit">أضف السؤال</button>
+    </form>
+
+    <div class="button-container">
         <a href="index.html" class="button">العودة للصفحة الرئيسية</a>
-        <a href="add-question.html" class="button">إضافة سؤال</a>
     </div>
 
     <script>
@@ -70,63 +132,42 @@
                     <ul>
                         ${question.options.map((option) => `<li>${option}</li>`).join('')}
                     </ul>
-                    <button class="button" onclick="editQuestion(${question.id})">تعديل</button>
-                    <button class="button" onclick="deleteQuestion(${question.id})">حذف</button>
                 `;
                 questionsContainer.appendChild(questionDiv);
             });
         }
 
-        // دالة لحذف السؤال
-        async function deleteQuestion(id) {
-            if (confirm('هل أنت متأكد من حذف هذا السؤال؟')) {
-                const response = await fetch(`http://localhost:3000/questions/${id}`, {
-                    method: 'DELETE'
-                });
+        // دالة لإضافة سؤال جديد
+        document.getElementById('add-question-form').addEventListener('submit', async (e) => {
+            e.preventDefault(); // منع إعادة تحميل الصفحة
 
-                if (response.ok) {
-                    alert('تم حذف السؤال بنجاح!');
-                    loadQuestions(); // إعادة تحميل الأسئلة بعد الحذف
-                } else {
-                    alert('حدث خطأ أثناء حذف السؤال.');
-                }
-            }
-        }
+            const text = document.getElementById('question-text').value;
+            const options = [
+                document.getElementById('option1').value,
+                document.getElementById('option2').value,
+                document.getElementById('option3').value,
+                document.getElementById('option4').value
+            ];
+            const correctAnswer = document.getElementById('correct-answer').value;
 
-        // دالة لتعديل السؤال
-        async function editQuestion(id) {
-            const response = await fetch(`http://localhost:3000/questions/${id}`);
-            const question = await response.json();
+            const newQuestion = { text, options, correctAnswer: parseInt(correctAnswer) };
 
-            const newQuestionText = prompt('عدل السؤال:', question.text);
-            const newOptions = [];
-            for (let i = 0; i < question.options.length; i++) {
-                const newOption = prompt(`عدل الخيار ${i + 1}:`, question.options[i]);
-                newOptions.push(newOption);
-            }
-            const newCorrectAnswer = prompt('اختر الرقم الصحيح (0-3):', question.correctAnswer);
-
-            const updatedQuestion = {
-                text: newQuestionText,
-                options: newOptions,
-                correctAnswer: parseInt(newCorrectAnswer)
-            };
-
-            const updateResponse = await fetch(`http://localhost:3000/questions/${id}`, {
-                method: 'PUT',
+            const response = await fetch('http://localhost:3000/add-question', {
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(updatedQuestion)
+                body: JSON.stringify(newQuestion)
             });
 
-            if (updateResponse.ok) {
-                alert('تم تعديل السؤال بنجاح!');
-                loadQuestions(); // إعادة تحميل الأسئلة بعد التعديل
+            if (response.ok) {
+                alert('تم إضافة السؤال بنجاح!');
+                loadQuestions(); // إعادة تحميل الأسئلة بعد الإضافة
+                document.getElementById('add-question-form').reset(); // تفريغ النموذج
             } else {
-                alert('حدث خطأ أثناء تعديل السؤال.');
+                alert('حدث خطأ أثناء إضافة السؤال.');
             }
-        }
+        });
 
         // تحميل الأسئلة عند فتح الصفحة
         loadQuestions();
